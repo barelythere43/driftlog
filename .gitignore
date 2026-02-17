@@ -1,0 +1,39 @@
+.env
+
+# env files (keep examples)
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# virtualenvs
+.venv/
+venv/
+env/
+.python-version
+
+# packaging / build
+build/
+dist/
+*.egg-info/
+
+# test / lint / typecheck caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# editors / IDEs
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Cursor
+.cursor/
