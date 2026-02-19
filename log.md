@@ -17,3 +17,10 @@
 - **Docker:** Copy scripts/ into image; added env_file for .env so OPENAI_API_KEY available in container
 - **Config:** requires-python relaxed to >=3.10
 - **.gitignore:** Python caches, venvs, egg-info, .env (keep .env.example), editors, OS junk
+
+## Day 3
+- **Retrieval:** `src/retrieval/dense.py` — `dense_search` (embed query via `embed_text`, pgvector cosine `<=>`, optional filters: location, country, tags with JSONB/array). Vector passed as string literal in SQL (`'{vector_str}'::vector`) to avoid async driver serialization issues.
+- **Generation:** `src/generation/prompts.py` — `build_prompt(question, chunks)` returns `{system, user}`; travel assistant rules, cited context blocks. `src/generation/generator.py` — `generate_answer(question, chunks)` calls Claude (claude-3-5-sonnet-20241022), parses `[1]` citations, builds citations list with excerpt, confidence = avg similarity of cited chunks; cached `AsyncAnthropic` client.
+- **Query API:** POST /api/v1/query — `QueryRequest` (question + optional `filters`: QueryFilters with location, country, tags, date_range), `QueryResponse` (answer, confidence, citations, query_type, retrieval_strategy, chunks_retrieved, chunks_after_rerank, trace_id). Citation model: index, chunk_id, source, location, excerpt. Short-circuit when no chunks (low-confidence refusal, no Claude call); trace_id = UUID for now.
+- **Schemas:** QueryFilters, DateRange, QueryRequest (question + filters), QueryResponse, Citation.
+- **Chunk index:** Switched embedding index from IVFFlat to HNSW with `vector_cosine_ops`; comment noting HNSW preferred for small-to-medium datasets (IVFFlat needs list/probe tuning).

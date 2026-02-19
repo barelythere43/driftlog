@@ -40,12 +40,13 @@ class Document(Base):
 class Chunk(Base):
     __tablename__ = "chunks"
 
+    # HNSW is preferred over IVFFlat for small-to-medium datasets: IVFFlat requires
+    # tuning lists/probe counts relative to data size; HNSW works well without that.
     __table_args__ = (
         Index(
             "ix_chunks_embedding_cosine",
             "embedding",
-            postgresql_using="ivfflat",
-            postgresql_with={"lists": 100},
+            postgresql_using="hnsw",
             postgresql_ops={"embedding": "vector_cosine_ops"},
         ),
         Index("ix_chunks_metadata", "metadata", postgresql_using="gin"),

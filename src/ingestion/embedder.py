@@ -13,3 +13,9 @@ async def embed_chunks(chunks: list[str]) -> list[list[float]]:
         input=chunks,
     )
     return [item.embedding for item in response.data]
+
+
+async def embed_text(text: str) -> list[float]:
+    """Embed a single string (e.g. a search query). Same model and API as embed_chunks."""
+    embeddings = await embed_chunks([text])
+    return embeddings[0] if embeddings else []

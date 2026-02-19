@@ -4,6 +4,9 @@
 .env.*
 !.env.example
 
+# scripts
+scripts/
+
 # python
 __pycache__/
 *.py[cod]
