@@ -14,6 +14,8 @@ dependencies = [
     "langchain-text-splitters>=0.3.0",
     "openai>=1.0.0",
     "anthropic>=0.39.0",
+    "rank-bm25>=0.2.2",
+    "cohere>=5.0.0",
 ]
 
 [project.optional-dependencies]

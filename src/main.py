@@ -1,3 +1,4 @@
+import logging
 import uuid
 from contextlib import asynccontextmanager
 
@@ -11,11 +12,19 @@ import src.models  # noqa: F401 — register models with Base.metadata for init_
 from src.models import Document
 from src.schemas import Citation, IngestRequest, IngestResponse, QueryRequest, QueryResponse
 from src.retrieval.dense import dense_search
+from src.retrieval.sparse import bm25_index
+from src.retrieval.fusion import fuse_results
+from src.retrieval.reranker import rerank
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    logger.info("Building BM25 index...")
+    await bm25_index.build_index()
+    logger.info("BM25 index built.")
     yield
 
 
@@ -54,26 +63,40 @@ async def ingest(body: IngestRequest, db: AsyncSession = Depends(get_db)):
 @app.post("/api/v1/query", response_model=QueryResponse)
 async def query(body: QueryRequest, db: AsyncSession = Depends(get_db)):
     f = body.filters
-    chunks = await dense_search(
+    dense_chunks = await dense_search(
         db,
         body.question,
         location=f.location if f else None,
         country=f.country if f else None,
         tags=f.tags if f else None,
     )
+    sparse_chunks = bm25_index.search(body.question, top_k=20)
     trace_id = str(uuid.uuid4())
-    if not chunks:
+    if not dense_chunks and not sparse_chunks:
         return QueryResponse(
             answer="I don't have enough information to answer that.",
             confidence=0.0,
             citations=[],
             query_type="factual",
-            retrieval_strategy="dense_only",
+            retrieval_strategy="hybrid_rrf_rerank",
             chunks_retrieved=0,
             chunks_after_rerank=0,
             trace_id=trace_id,
         )
-    result = await generate_answer(body.question, chunks)
+    fused = fuse_results(dense_chunks, sparse_chunks, top_k=20)
+    reranked = await rerank(body.question, fused, top_n=5)
+    if not reranked:
+        return QueryResponse(
+            answer="I don't have enough information to answer that.",
+            confidence=0.0,
+            citations=[],
+            query_type="factual",
+            retrieval_strategy="hybrid_rrf_rerank",
+            chunks_retrieved=len(fused),
+            chunks_after_rerank=0,
+            trace_id=trace_id,
+        )
+    result = await generate_answer(body.question, reranked)
     citations = [
         Citation(
             index=i,
@@ -89,8 +112,8 @@ async def query(body: QueryRequest, db: AsyncSession = Depends(get_db)):
         confidence=result["confidence"],
         citations=citations,
         query_type=result["query_type"],
-        retrieval_strategy="dense_only",
-        chunks_retrieved=result["chunks_retrieved"],
-        chunks_after_rerank=result["chunks_after_rerank"],
+        retrieval_strategy="hybrid_rrf_rerank",
+        chunks_retrieved=len(fused),
+        chunks_after_rerank=len(reranked),
         trace_id=trace_id,
     )

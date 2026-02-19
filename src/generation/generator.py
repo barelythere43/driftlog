@@ -54,8 +54,8 @@ async def generate_answer(question: str, chunks: list[dict]) -> dict:
                 "excerpt": excerpt,
             }
         )
-        if "similarity_score" in chunk:
-            cited_scores.append(chunk["similarity_score"])
+        if "rerank_score" in chunk:
+            cited_scores.append(chunk["rerank_score"])
 
     if cited_scores:
         confidence = sum(cited_scores) / len(cited_scores)
