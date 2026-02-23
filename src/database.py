@@ -13,7 +13,7 @@ if _database_url.startswith("postgresql://") and "+" not in _database_url.split(
 
 engine = create_async_engine(
     _database_url,
-    echo=settings.app_env == "development",
+    echo=False,
     pool_pre_ping=True,
 )
 

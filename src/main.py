@@ -1,16 +1,21 @@
+from __future__ import annotations
+
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from datetime import date
 
-from fastapi import Depends, FastAPI
+from dateutil import parser as dateutil_parser
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db, init_db
 from src.generation.generator import generate_answer
 from src.ingestion.pipeline import process_document
+from src.ingestion.transcriber import transcribe_journal_images
 import src.models  # noqa: F401 — register models with Base.metadata for init_db
 from src.models import Document
-from src.schemas import Citation, IngestRequest, IngestResponse, QueryRequest, QueryResponse
+from src.schemas import Citation, IngestRequest, IngestResponse, JournalIngestRequest, QueryRequest, QueryResponse
 from src.retrieval.dense import dense_search
 from src.retrieval.sparse import bm25_index
 from src.retrieval.fusion import fuse_results
@@ -41,8 +46,18 @@ async def health():
     return {"status": "ok", "version": "0.1.0"}
 
 
+def _parse_entry_date(value: str | None) -> date | None:
+    if not value or not value.strip():
+        return None
+    try:
+        return dateutil_parser.parse(value.strip()).date()
+    except (ValueError, TypeError):
+        return None
+
+
 @app.post("/api/v1/ingest", response_model=IngestResponse)
 async def ingest(body: IngestRequest, db: AsyncSession = Depends(get_db)):
+    total_chunks = 0
     for doc in body.documents:
         row = Document(
             content=doc.content,
@@ -50,13 +65,52 @@ async def ingest(body: IngestRequest, db: AsyncSession = Depends(get_db)):
             location=doc.location,
             country=doc.country,
             tags=doc.tags,
+            entry_date=_parse_entry_date(doc.entry_date),
         )
         db.add(row)
-        await process_document(db, row)
+        total_chunks += await process_document(db, row)
     return IngestResponse(
         job_id=str(uuid.uuid4()),
         status="completed",
         document_count=len(body.documents),
+        chunk_count=total_chunks,
+    )
+
+
+@app.post("/api/v1/ingest/journal", response_model=IngestResponse)
+async def ingest_journal(body: JournalIngestRequest, db: AsyncSession = Depends(get_db)):
+    entries = await transcribe_journal_images([{"data": img.data, "media_type": img.media_type} for img in body.images])
+    if not entries or all(not (e.get("transcription") or "").strip() for e in entries):
+        raise HTTPException(status_code=422, detail="Could not transcribe any text from the provided images")
+    total_chunks = 0
+    document_count = 0
+    for entry in entries:
+        transcription = (entry.get("transcription") or "").strip()
+        if not transcription:
+            continue
+        meta = entry.get("metadata") or {}
+        source = body.source
+        location = body.location if body.location is not None else meta.get("location")
+        country = body.country if body.country is not None else meta.get("country")
+        tags = body.tags if body.tags is not None else meta.get("tags") or []
+        entry_date = _parse_entry_date(body.entry_date) if body.entry_date is not None else _parse_entry_date(meta.get("date"))
+        row = Document(
+            content=transcription,
+            source=source,
+            location=location,
+            country=country,
+            tags=tags,
+            entry_date=entry_date,
+        )
+        db.add(row)
+        total_chunks += await process_document(db, row)
+        document_count += 1
+    await bm25_index.build_index()
+    return IngestResponse(
+        job_id=str(uuid.uuid4()),
+        status="completed",
+        document_count=document_count,
+        chunk_count=total_chunks,
     )
 
 

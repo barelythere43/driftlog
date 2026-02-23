@@ -1,4 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class JournalImage(BaseModel):
+    data: str
+    media_type: str
+
+
+class JournalIngestRequest(BaseModel):
+    images: list[JournalImage] = Field(..., min_length=1)
+    location: str | None = None
+    country: str | None = None
+    tags: list[str] | None = None
+    source: str = "journal"
+    entry_date: str | None = None
 
 
 class IngestDocumentRequest(BaseModel):
@@ -7,6 +21,7 @@ class IngestDocumentRequest(BaseModel):
     location: str | None = None
     country: str | None = None
     tags: list[str] | None = None
+    entry_date: str | None = None
 
 
 class IngestRequest(BaseModel):
@@ -17,6 +32,7 @@ class IngestResponse(BaseModel):
     job_id: str
     status: str
     document_count: int
+    chunk_count: int = 0
 
 
 class HealthResponse(BaseModel):
