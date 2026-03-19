@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DriftLog — Travel Knowledge</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- Ambient background -->
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand" onclick="showView('query')">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        <path d="M2 12h20M12 2c2.5 3 4 6.5 4 10s-1.5 7-4 10c-2.5-3-4-6.5-4-10s1.5-7 4-10z"/>
+      </svg>
+      <span class="brand-text">DriftLog</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link active" data-view="query" onclick="showView('query')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Ask
+      </button>
+      <button class="nav-link" data-view="ingest" onclick="showView('ingest')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add
+      </button>
+      <button class="nav-link" data-view="journal" onclick="showView('journal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        Journal
+      </button>
+    </div>
+  </nav>
+
+  <!-- Query View -->
+  <main id="view-query" class="view active">
+    <div class="hero">
+      <h1 class="hero-title">
+        <span class="title-line">Where did you</span>
+        <span class="title-line accent"><em>wander</em>?</span>
+      </h1>
+      <p class="hero-subtitle">Search your travel memories with AI-powered recall</p>
+    </div>
+
+    <div class="search-container">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          id="query-input"
+          class="search-input"
+          placeholder="What was the best coffee shop in Lisbon?"
+          autocomplete="off"
+        />
+        <button id="query-btn" class="search-btn" onclick="submitQuery()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+      <!-- Filters toggle -->
+      <button class="filters-toggle" onclick="toggleFilters()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+        Filters
+      </button>
+
+      <!-- Filters panel -->
+      <div id="filters-panel" class="filters-panel hidden">
+        <div class="filter-group">
+          <label>Location</label>
+          <input type="text" id="filter-location" placeholder="e.g. Lisbon" />
+        </div>
+        <div class="filter-group">
+          <label>Country</label>
+          <input type="text" id="filter-country" placeholder="e.g. Portugal" />
+        </div>
+        <div class="filter-group">
+          <label>Tags</label>
+          <input type="text" id="filter-tags" placeholder="coffee, food (comma-separated)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Example queries -->
+    <div id="example-queries" class="examples">
+      <p class="examples-label">Try asking</p>
+      <div class="example-chips">
+        <button class="chip" onclick="fillQuery(this)">What food did I try in Tokyo?</button>
+        <button class="chip" onclick="fillQuery(this)">Best coworking spaces I visited</button>
+        <button class="chip" onclick="fillQuery(this)">Where did I go hiking?</button>
+        <button class="chip" onclick="fillQuery(this)">Tell me about my time in Southeast Asia</button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="query-loading" class="loading hidden">
+      <div class="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p>Searching your memories...</p>
+    </div>
+
+    <!-- Answer section -->
+    <div id="answer-section" class="answer-section hidden">
+      <div class="answer-card">
+        <div class="answer-header">
+          <div class="confidence-badge" id="confidence-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <span id="confidence-text">95%</span>
+          </div>
+          <div class="answer-meta">
+            <span id="meta-chunks" class="meta-item"></span>
+            <span id="meta-strategy" class="meta-item"></span>
+          </div>
+        </div>
+        <div class="answer-body" id="answer-body"></div>
+      </div>
+
+      <!-- Citations -->
+      <div id="citations-section" class="citations-section">
+        <h3 class="citations-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Sources
+        </h3>
+        <div id="citations-list" class="citations-list"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Ingest View -->
+  <main id="view-ingest" class="view">
+    <div class="view-header">
+      <h2>Add Travel Memories</h2>
+      <p>Add journal entries, travel notes, or any text content to your knowledge base</p>
+    </div>
+
+    <div class="ingest-form">
+      <div class="form-card">
+        <div class="form-group">
+          <label for="ingest-content">Content <span class="required">*</span></label>
+          <textarea id="ingest-content" rows="8" placeholder="Paste your travel journal entry, notes, or any text..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ingest-source">Source</label>
+            <input type="text" id="ingest-source" placeholder="e.g. personal journal" />
+          </div>
+          <div class="form-group">
+            <label for="ingest-location">Location</label>
+            <input type="text" id="ingest-location" placeholder="e.g. Chiang Mai" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ingest-country">Country</label>
+            <input type="text" id="ingest-country" placeholder="e.g. Thailand" />
+          </div>
+          <div class="form-group">
+            <label for="ingest-date">Entry Date</label>
+            <input type="date" id="ingest-date" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ingest-tags">Tags</label>
+          <input type="text" id="ingest-tags" placeholder="food, coffee, culture (comma-separated)" />
+        </div>
+
+        <button class="btn-primary" id="ingest-btn" onclick="submitIngest()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Add to Knowledge Base
+        </button>
+      </div>
+    </div>
+
+    <!-- Ingest result -->
+    <div id="ingest-result" class="result-toast hidden"></div>
+  </main>
+
+  <!-- Journal View -->
+  <main id="view-journal" class="view">
+    <div class="view-header">
+      <h2>Scan Journal Pages</h2>
+      <p>Upload photos of handwritten journal pages — AI will transcribe and index them</p>
+    </div>
+
+    <div class="journal-form">
+      <div class="form-card">
+        <!-- Drop zone -->
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('journal-files').click()">
+          <input type="file" id="journal-files" multiple accept="image/*" style="display:none" onchange="handleFiles(this.files)" />
+          <div class="drop-zone-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>Drop journal photos here</p>
+            <span>or click to browse</span>
+          </div>
+        </div>
+
+        <!-- Previews -->
+        <div id="image-previews" class="image-previews"></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="journal-source">Source</label>
+            <input type="text" id="journal-source" value="journal" />
+          </div>
+          <div class="form-group">
+            <label for="journal-location">Location</label>
+            <input type="text" id="journal-location" placeholder="e.g. Bali" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="journal-country">Country</label>
+            <input type="text" id="journal-country" placeholder="e.g. Indonesia" />
+          </div>
+          <div class="form-group">
+            <label for="journal-date">Entry Date</label>
+            <input type="date" id="journal-date" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="journal-tags">Tags</label>
+          <input type="text" id="journal-tags" placeholder="food, culture (comma-separated)" />
+        </div>
+
+        <button class="btn-primary" id="journal-btn" onclick="submitJournal()" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Transcribe &amp; Index
+        </button>
+      </div>
+    </div>
+
+    <!-- Journal result -->
+    <div id="journal-result" class="result-toast hidden"></div>
+  </main>
+
+  <footer class="footer">
+    <p>DriftLog &mdash; Your travels, always remembered</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

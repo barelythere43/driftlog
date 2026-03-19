@@ -4,9 +4,12 @@ import logging
 import uuid
 from contextlib import asynccontextmanager
 from datetime import date
+from pathlib import Path
 
 from dateutil import parser as dateutil_parser
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db, init_db
@@ -33,12 +36,22 @@ async def lifespan(app: FastAPI):
     yield
 
 
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
 app = FastAPI(
     title="DriftLog",
     description="AI-powered travel knowledge system",
     version="0.1.0",
     lifespan=lifespan,
 )
+
+@app.get("/")
+async def root():
+    return FileResponse(str(FRONTEND_DIR / "index.html"))
+
+
+# Serve frontend static assets — mounted AFTER explicit routes so API routes take priority
+app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
 @app.get("/health")
