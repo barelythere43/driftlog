@@ -11,6 +11,7 @@ function showView(name) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   document.getElementById(`view-${name}`).classList.add('active');
   document.querySelector(`.nav-link[data-view="${name}"]`).classList.add('active');
+  window.scrollTo(0, 0);
 }
 
 // ── Query ──
@@ -62,11 +63,20 @@ async function submitQuery() {
 
     const data = await res.json();
     renderAnswer(data);
+    scrollToAnswer();
   } catch (err) {
     renderError(err.message);
+    scrollToAnswer();
   } finally {
     document.getElementById('query-loading').classList.add('hidden');
+    // Re-show example queries so user can try another
+    document.getElementById('example-queries').classList.remove('hidden');
   }
+}
+
+function scrollToAnswer() {
+  const el = document.getElementById('answer-section');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function renderAnswer(data) {

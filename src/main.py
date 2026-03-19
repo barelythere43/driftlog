@@ -45,13 +45,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Serve frontend static assets on /static, and index.html on /
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+
+
 @app.get("/")
 async def root():
     return FileResponse(str(FRONTEND_DIR / "index.html"))
-
-
-# Serve frontend static assets — mounted AFTER explicit routes so API routes take priority
-app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
 
 @app.get("/health")
