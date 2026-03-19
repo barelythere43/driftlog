@@ -1,0 +1,66 @@
+name: Eval
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  CO_API_KEY: ${{ secrets.COHERE_API_KEY }}
+  DATABASE_URL: postgresql://driftlog:driftlog_dev@localhost:5432/driftlog
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null; then
+              echo "API healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API did not become healthy"
+          exit 1
+
+      - name: Run behavioral tests
+        run: pytest eval/test_behaviors.py -v
+
+      - name: Run Ragas eval
+        run: python -m eval.run_eval
+
+      - name: Check faithfulness gate
+        run: |
+          LATEST=$(ls -t eval/results/eval_run_*.json 2>/dev/null | head -1)
+          if [ -z "$LATEST" ]; then
+            echo "No eval result JSON found"
+            exit 1
+          fi
+          python -c '
+          import json, sys
+          with open(sys.argv[1]) as f:
+            d = json.load(f)
+          faith = d.get("aggregate", {}).get("faithfulness", 0)
+          if faith < 0.85:
+            print("faithfulness", faith, "below gate 0.85")
+            sys.exit(1)
+          print("faithfulness", faith, ">= 0.85")
+          ' "$LATEST"

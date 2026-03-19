@@ -12,6 +12,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# test data
+test_images/
+test_journal_images_batch_1/
+
 # virtualenvs
 .venv/
 venv/
