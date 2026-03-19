@@ -8,6 +8,7 @@ import re
 import boto3
 
 from src.generation.generator import _get_client
+from src.tracing import get_tracer, set_llm_attributes, timed_span
 
 logger = logging.getLogger(__name__)
 
@@ -90,16 +91,34 @@ Use null for any metadata field you cannot confidently determine."""
         )
 
     client = _get_client()
-    try:
-        response = await client.messages.create(
+    tracer = get_tracer()
+    with timed_span(tracer, "transcription.claude_vision", {
+        "transcription.image_count": len(images),
+        "transcription.textract_chars": len(textract_text),
+    }) as span:
+        try:
+            response = await client.messages.create(
+                model=TRANSCRIPTION_MODEL,
+                max_tokens=MAX_TOKENS,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": content}],
+            )
+        except Exception as e:
+            span.set_attribute("error", True)
+            span.set_attribute("error.message", str(e))
+            logger.exception("Claude vision transcription failed: %s", e)
+            raise
+
+        # Record LLM attributes
+        usage = response.usage
+        set_llm_attributes(
+            span,
             model=TRANSCRIPTION_MODEL,
+            input_tokens=usage.input_tokens if usage else None,
+            output_tokens=usage.output_tokens if usage else None,
+            total_tokens=(usage.input_tokens + usage.output_tokens) if usage else None,
             max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": content}],
         )
-    except Exception as e:
-        logger.exception("Claude vision transcription failed: %s", e)
-        raise
 
     # Step 4: Parse response — strip markdown fences, then expect a list of {transcription, metadata}
     raw = response.content[0].text if response.content else ""
