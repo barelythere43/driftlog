@@ -4,6 +4,21 @@
 
 const API_BASE = '';
 
+// ── Theme ──
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('driftlog-theme', next);
+}
+
+// Apply saved theme on load
+(function () {
+  const saved = localStorage.getItem('driftlog-theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+})();
+
 // ── View Navigation ──
 
 function showView(name) {
