@@ -23,12 +23,14 @@ from src.retrieval.dense import dense_search
 from src.retrieval.sparse import bm25_index
 from src.retrieval.fusion import fuse_results
 from src.retrieval.reranker import rerank
+from src.tracing import get_tracer, init_tracing, timed_span
 
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_tracing()
     await init_db()
     logger.info("Building BM25 index...")
     await bm25_index.build_index()
@@ -70,117 +72,144 @@ def _parse_entry_date(value: str | None) -> date | None:
 
 @app.post("/api/v1/ingest", response_model=IngestResponse)
 async def ingest(body: IngestRequest, db: AsyncSession = Depends(get_db)):
-    total_chunks = 0
-    for doc in body.documents:
-        row = Document(
-            content=doc.content,
-            source=doc.source,
-            location=doc.location,
-            country=doc.country,
-            tags=doc.tags,
-            entry_date=_parse_entry_date(doc.entry_date),
+    tracer = get_tracer()
+    with timed_span(tracer, "api.ingest", {
+        "ingest.document_count": len(body.documents),
+    }) as span:
+        total_chunks = 0
+        for doc in body.documents:
+            row = Document(
+                content=doc.content,
+                source=doc.source,
+                location=doc.location,
+                country=doc.country,
+                tags=doc.tags,
+                entry_date=_parse_entry_date(doc.entry_date),
+            )
+            db.add(row)
+            total_chunks += await process_document(db, row)
+        span.set_attribute("ingest.total_chunks", total_chunks)
+        return IngestResponse(
+            job_id=str(uuid.uuid4()),
+            status="completed",
+            document_count=len(body.documents),
+            chunk_count=total_chunks,
         )
-        db.add(row)
-        total_chunks += await process_document(db, row)
-    return IngestResponse(
-        job_id=str(uuid.uuid4()),
-        status="completed",
-        document_count=len(body.documents),
-        chunk_count=total_chunks,
-    )
 
 
 @app.post("/api/v1/ingest/journal", response_model=IngestResponse)
 async def ingest_journal(body: JournalIngestRequest, db: AsyncSession = Depends(get_db)):
-    entries = await transcribe_journal_images([{"data": img.data, "media_type": img.media_type} for img in body.images])
-    if not entries or all(not (e.get("transcription") or "").strip() for e in entries):
-        raise HTTPException(status_code=422, detail="Could not transcribe any text from the provided images")
-    total_chunks = 0
-    document_count = 0
-    for entry in entries:
-        transcription = (entry.get("transcription") or "").strip()
-        if not transcription:
-            continue
-        meta = entry.get("metadata") or {}
-        source = body.source
-        location = body.location if body.location is not None else meta.get("location")
-        country = body.country if body.country is not None else meta.get("country")
-        tags = body.tags if body.tags is not None else meta.get("tags") or []
-        entry_date = _parse_entry_date(body.entry_date) if body.entry_date is not None else _parse_entry_date(meta.get("date"))
-        row = Document(
-            content=transcription,
-            source=source,
-            location=location,
-            country=country,
-            tags=tags,
-            entry_date=entry_date,
+    tracer = get_tracer()
+    with timed_span(tracer, "api.ingest_journal", {
+        "ingest.image_count": len(body.images),
+    }) as span:
+        entries = await transcribe_journal_images([{"data": img.data, "media_type": img.media_type} for img in body.images])
+        if not entries or all(not (e.get("transcription") or "").strip() for e in entries):
+            span.set_attribute("error", True)
+            raise HTTPException(status_code=422, detail="Could not transcribe any text from the provided images")
+        total_chunks = 0
+        document_count = 0
+        for entry in entries:
+            transcription = (entry.get("transcription") or "").strip()
+            if not transcription:
+                continue
+            meta = entry.get("metadata") or {}
+            source = body.source
+            location = body.location if body.location is not None else meta.get("location")
+            country = body.country if body.country is not None else meta.get("country")
+            tags = body.tags if body.tags is not None else meta.get("tags") or []
+            entry_date = _parse_entry_date(body.entry_date) if body.entry_date is not None else _parse_entry_date(meta.get("date"))
+            row = Document(
+                content=transcription,
+                source=source,
+                location=location,
+                country=country,
+                tags=tags,
+                entry_date=entry_date,
+            )
+            db.add(row)
+            total_chunks += await process_document(db, row)
+            document_count += 1
+        await bm25_index.build_index()
+        span.set_attribute("ingest.document_count", document_count)
+        span.set_attribute("ingest.total_chunks", total_chunks)
+        return IngestResponse(
+            job_id=str(uuid.uuid4()),
+            status="completed",
+            document_count=document_count,
+            chunk_count=total_chunks,
         )
-        db.add(row)
-        total_chunks += await process_document(db, row)
-        document_count += 1
-    await bm25_index.build_index()
-    return IngestResponse(
-        job_id=str(uuid.uuid4()),
-        status="completed",
-        document_count=document_count,
-        chunk_count=total_chunks,
-    )
 
 
 @app.post("/api/v1/query", response_model=QueryResponse)
 async def query(body: QueryRequest, db: AsyncSession = Depends(get_db)):
-    f = body.filters
-    dense_chunks = await dense_search(
-        db,
-        body.question,
-        location=f.location if f else None,
-        country=f.country if f else None,
-        tags=f.tags if f else None,
-    )
-    sparse_chunks = bm25_index.search(body.question, top_k=20)
+    tracer = get_tracer()
     trace_id = str(uuid.uuid4())
-    if not dense_chunks and not sparse_chunks:
-        return QueryResponse(
-            answer="I don't have enough information to answer that.",
-            confidence=0.0,
-            citations=[],
-            query_type="factual",
-            retrieval_strategy="hybrid_rrf_rerank",
-            chunks_retrieved=0,
-            chunks_after_rerank=0,
-            trace_id=trace_id,
+    with timed_span(tracer, "api.query", {
+        "query.question_length": len(body.question),
+        "query.has_filters": body.filters is not None,
+        "query.trace_id": trace_id,
+    }) as span:
+        f = body.filters
+        dense_chunks = await dense_search(
+            db,
+            body.question,
+            location=f.location if f else None,
+            country=f.country if f else None,
+            tags=f.tags if f else None,
         )
-    fused = fuse_results(dense_chunks, sparse_chunks, top_k=20)
-    reranked = await rerank(body.question, fused, top_n=5)
-    if not reranked:
+        sparse_chunks = bm25_index.search(body.question, top_k=20)
+        span.set_attribute("query.dense_results", len(dense_chunks))
+        span.set_attribute("query.sparse_results", len(sparse_chunks))
+        if not dense_chunks and not sparse_chunks:
+            span.set_attribute("query.early_exit", "no_results")
+            return QueryResponse(
+                answer="I don't have enough information to answer that.",
+                confidence=0.0,
+                citations=[],
+                query_type="factual",
+                retrieval_strategy="hybrid_rrf_rerank",
+                chunks_retrieved=0,
+                chunks_after_rerank=0,
+                trace_id=trace_id,
+            )
+        fused = fuse_results(dense_chunks, sparse_chunks, top_k=20)
+        span.set_attribute("query.fused_results", len(fused))
+        reranked = await rerank(body.question, fused, top_n=5)
+        span.set_attribute("query.reranked_results", len(reranked))
+        if not reranked:
+            span.set_attribute("query.early_exit", "no_reranked")
+            return QueryResponse(
+                answer="I don't have enough information to answer that.",
+                confidence=0.0,
+                citations=[],
+                query_type="factual",
+                retrieval_strategy="hybrid_rrf_rerank",
+                chunks_retrieved=len(fused),
+                chunks_after_rerank=0,
+                trace_id=trace_id,
+            )
+        result = await generate_answer(body.question, reranked)
+        citations = [
+            Citation(
+                index=i,
+                chunk_id=c["chunk_id"],
+                source=c["source"],
+                location=c["location"],
+                excerpt=c["excerpt"],
+            )
+            for i, c in enumerate(result["citations"], start=1)
+        ]
+        span.set_attribute("query.confidence", result["confidence"])
+        span.set_attribute("query.citations_count", len(citations))
+        span.set_attribute("query.answer_length", len(result["answer"]))
         return QueryResponse(
-            answer="I don't have enough information to answer that.",
-            confidence=0.0,
-            citations=[],
-            query_type="factual",
+            answer=result["answer"],
+            confidence=result["confidence"],
+            citations=citations,
+            query_type=result["query_type"],
             retrieval_strategy="hybrid_rrf_rerank",
             chunks_retrieved=len(fused),
-            chunks_after_rerank=0,
+            chunks_after_rerank=len(reranked),
             trace_id=trace_id,
         )
-    result = await generate_answer(body.question, reranked)
-    citations = [
-        Citation(
-            index=i,
-            chunk_id=c["chunk_id"],
-            source=c["source"],
-            location=c["location"],
-            excerpt=c["excerpt"],
-        )
-        for i, c in enumerate(result["citations"], start=1)
-    ]
-    return QueryResponse(
-        answer=result["answer"],
-        confidence=result["confidence"],
-        citations=citations,
-        query_type=result["query_type"],
-        retrieval_strategy="hybrid_rrf_rerank",
-        chunks_retrieved=len(fused),
-        chunks_after_rerank=len(reranked),
-        trace_id=trace_id,
-    )
