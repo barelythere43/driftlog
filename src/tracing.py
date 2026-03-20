@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import base64
 import logging
-import os
 import time
 from contextlib import contextmanager
 from typing import Any, Generator
@@ -23,6 +22,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
+from src.config import settings
+
 logger = logging.getLogger(__name__)
 
 _initialized = False
@@ -31,18 +32,15 @@ _initialized = False
 def init_tracing() -> None:
     """Initialize OpenTelemetry with Langfuse OTLP exporter.
 
-    Required env vars:
-      LANGFUSE_PUBLIC_KEY  — Langfuse project public key
-      LANGFUSE_SECRET_KEY  — Langfuse project secret key
-      LANGFUSE_HOST        — Langfuse host (default: https://cloud.langfuse.com)
+    Reads credentials from the app Settings (which loads from .env).
     """
     global _initialized
     if _initialized:
         return
 
-    public_key = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
-    secret_key = os.environ.get("LANGFUSE_SECRET_KEY", "")
-    host = os.environ.get("LANGFUSE_HOST", "https://cloud.langfuse.com")
+    public_key = settings.langfuse_public_key
+    secret_key = settings.langfuse_secret_key
+    host = settings.langfuse_host
 
     if not public_key or not secret_key:
         logger.warning(
@@ -66,15 +64,14 @@ def init_tracing() -> None:
         {
             "service.name": "driftlog",
             "service.version": "0.1.0",
-            "deployment.environment": os.environ.get("APP_ENV", "development"),
+            "deployment.environment": settings.app_env,
         }
     )
 
     provider = TracerProvider(resource=resource)
 
     # Use BatchSpanProcessor in production, SimpleSpanProcessor in dev for immediate visibility
-    env = os.environ.get("APP_ENV", "development")
-    if env == "production":
+    if settings.app_env == "production":
         provider.add_span_processor(BatchSpanProcessor(exporter))
     else:
         provider.add_span_processor(SimpleSpanProcessor(exporter))
