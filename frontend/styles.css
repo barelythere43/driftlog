@@ -3,28 +3,28 @@
    ======================================== */
 
 :root {
-  /* Color palette — warm earth + ocean tones */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-card: rgba(255, 255, 255, 0.03);
-  --bg-card-hover: rgba(255, 255, 255, 0.06);
+  /* Color palette — Stripe-inspired navy + indigo */
+  --bg-primary: #0a2540;
+  --bg-secondary: #0d2f50;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-card-hover: rgba(255, 255, 255, 0.07);
   --bg-glass: rgba(255, 255, 255, 0.05);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-medium: rgba(255, 255, 255, 0.1);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.12);
 
-  --text-primary: #e8e4df;
-  --text-secondary: rgba(232, 228, 223, 0.6);
-  --text-muted: rgba(232, 228, 223, 0.35);
+  --text-primary: #e3e8ef;
+  --text-secondary: rgba(227, 232, 239, 0.6);
+  --text-muted: rgba(227, 232, 239, 0.35);
 
-  --accent-warm: #e8976c;
-  --accent-warm-glow: rgba(232, 151, 108, 0.15);
-  --accent-teal: #6cc4c4;
-  --accent-teal-glow: rgba(108, 196, 196, 0.15);
-  --accent-gold: #c4a86c;
+  --accent-warm: #635bff;
+  --accent-warm-glow: rgba(99, 91, 255, 0.15);
+  --accent-teal: #00d4ff;
+  --accent-teal-glow: rgba(0, 212, 255, 0.15);
+  --accent-gold: #a78bfa;
 
-  --gradient-warm: linear-gradient(135deg, #e8976c, #c4725a);
-  --gradient-ocean: linear-gradient(135deg, #6cc4c4, #5a9ead);
-  --gradient-hero: linear-gradient(160deg, rgba(232, 151, 108, 0.08), rgba(108, 196, 196, 0.06));
+  --gradient-warm: linear-gradient(135deg, #635bff, #4f46e5);
+  --gradient-ocean: linear-gradient(135deg, #00d4ff, #0ea5e9);
+  --gradient-hero: linear-gradient(160deg, rgba(99, 91, 255, 0.08), rgba(0, 212, 255, 0.06));
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -34,7 +34,7 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 60px rgba(232, 151, 108, 0.1);
+  --shadow-glow: 0 0 60px rgba(99, 91, 255, 0.12);
 
   --orb-opacity: 0.4;
 
@@ -46,51 +46,51 @@
 /* ── Light Theme ── */
 
 [data-theme="light"] {
-  --bg-primary: #f5f2ee;
-  --bg-secondary: #ebe7e1;
+  --bg-primary: #f6f9fc;
+  --bg-secondary: #e3e8ee;
   --bg-card: rgba(0, 0, 0, 0.03);
   --bg-card-hover: rgba(0, 0, 0, 0.05);
   --bg-glass: rgba(0, 0, 0, 0.03);
   --border-subtle: rgba(0, 0, 0, 0.08);
   --border-medium: rgba(0, 0, 0, 0.12);
 
-  --text-primary: #1a1816;
-  --text-secondary: rgba(26, 24, 22, 0.6);
-  --text-muted: rgba(26, 24, 22, 0.35);
+  --text-primary: #0a2540;
+  --text-secondary: rgba(10, 37, 64, 0.6);
+  --text-muted: rgba(10, 37, 64, 0.35);
 
-  --accent-warm: #c47a4a;
-  --accent-warm-glow: rgba(196, 122, 74, 0.12);
-  --accent-teal: #3a9a9a;
-  --accent-teal-glow: rgba(58, 154, 154, 0.12);
-  --accent-gold: #a08040;
+  --accent-warm: #635bff;
+  --accent-warm-glow: rgba(99, 91, 255, 0.1);
+  --accent-teal: #0ea5e9;
+  --accent-teal-glow: rgba(14, 165, 233, 0.1);
+  --accent-gold: #7c3aed;
 
-  --gradient-warm: linear-gradient(135deg, #c47a4a, #a85e38);
-  --gradient-ocean: linear-gradient(135deg, #3a9a9a, #2e7e8a);
+  --gradient-warm: linear-gradient(135deg, #635bff, #4f46e5);
+  --gradient-ocean: linear-gradient(135deg, #0ea5e9, #0284c7);
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 60px rgba(196, 122, 74, 0.06);
+  --shadow-sm: 0 2px 8px rgba(10, 37, 64, 0.06);
+  --shadow-md: 0 8px 32px rgba(10, 37, 64, 0.08);
+  --shadow-lg: 0 16px 64px rgba(10, 37, 64, 0.1);
+  --shadow-glow: 0 0 60px rgba(99, 91, 255, 0.08);
 
   --orb-opacity: 0.2;
 }
 
 [data-theme="light"] .navbar {
-  background: rgba(245, 242, 238, 0.85);
+  background: rgba(246, 249, 252, 0.85);
 }
 
 [data-theme="light"] .search-btn {
-  box-shadow: 0 2px 12px rgba(196, 122, 74, 0.25);
+  box-shadow: 0 2px 12px rgba(99, 91, 255, 0.25);
 }
 
 [data-theme="light"] .confidence-high {
-  background: rgba(58, 154, 58, 0.1);
-  color: #2e8a2e;
+  background: rgba(0, 180, 120, 0.1);
+  color: #0a7a50;
 }
 
 [data-theme="light"] .confidence-medium {
-  background: rgba(160, 128, 64, 0.1);
-  color: #806020;
+  background: rgba(99, 91, 255, 0.1);
+  color: #4f46e5;
 }
 
 [data-theme="light"] .confidence-low {
@@ -99,9 +99,9 @@
 }
 
 [data-theme="light"] .result-toast.success {
-  background: rgba(58, 154, 58, 0.08);
-  border-color: rgba(58, 154, 58, 0.2);
-  color: #2e8a2e;
+  background: rgba(0, 180, 120, 0.08);
+  border-color: rgba(0, 180, 120, 0.2);
+  color: #0a7a50;
 }
 
 [data-theme="light"] .result-toast.error {
@@ -160,7 +160,7 @@ body {
 .orb-1 {
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(232, 151, 108, 0.15), transparent 70%);
+  background: radial-gradient(circle, rgba(99, 91, 255, 0.15), transparent 70%);
   top: -200px;
   right: -100px;
   animation-delay: 0s;
@@ -169,7 +169,7 @@ body {
 .orb-2 {
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(108, 196, 196, 0.12), transparent 70%);
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.12), transparent 70%);
   bottom: -150px;
   left: -100px;
   animation-delay: -7s;
@@ -178,7 +178,7 @@ body {
 .orb-3 {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(196, 168, 108, 0.1), transparent 70%);
+  background: radial-gradient(circle, rgba(167, 139, 250, 0.1), transparent 70%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
