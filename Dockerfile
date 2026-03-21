@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir .
 
 # Copy application code
 COPY src/ src/
+COPY frontend/ frontend/
 
 # Non-root user for security
 RUN useradd --create-home appuser

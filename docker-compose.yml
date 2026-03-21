@@ -14,7 +14,7 @@ services:
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-      - LANGFUSE_HOST=${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      - LANGFUSE_HOST=${LANGFUSE_HOST:-https://us.cloud.langfuse.com}
     depends_on:
       postgres:
         condition: service_healthy

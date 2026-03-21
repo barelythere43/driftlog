@@ -29,6 +29,16 @@ logger = logging.getLogger(__name__)
 _initialized = False
 
 
+def _langfuse_otlp_traces_endpoint(host: str) -> str:
+    """Build full OTLP/HTTP traces URL. Accepts base host or full .../otel path."""
+    h = host.rstrip("/")
+    if h.endswith("/api/public/otel/v1/traces"):
+        return h
+    if h.endswith("/api/public/otel"):
+        return f"{h}/v1/traces"
+    return f"{h}/api/public/otel/v1/traces"
+
+
 def init_tracing() -> None:
     """Initialize OpenTelemetry with Langfuse OTLP exporter.
 
@@ -38,9 +48,9 @@ def init_tracing() -> None:
     if _initialized:
         return
 
-    public_key = settings.langfuse_public_key
-    secret_key = settings.langfuse_secret_key
-    host = settings.langfuse_host
+    public_key = settings.langfuse_public_key.strip()
+    secret_key = settings.langfuse_secret_key.strip()
+    host = settings.langfuse_host.strip()
 
     if not public_key or not secret_key:
         logger.warning(
@@ -50,13 +60,16 @@ def init_tracing() -> None:
         _initialized = True
         return
 
-    # Langfuse OTLP endpoint expects Basic auth: base64(public_key:secret_key)
+    # Langfuse OTLP: Basic auth = base64("public_key:secret_key"), no newline (see Langfuse OTel docs).
+    # x-langfuse-ingestion-version is required for current Langfuse Cloud ingestion.
     auth_token = base64.b64encode(f"{public_key}:{secret_key}".encode()).decode()
+    trace_endpoint = _langfuse_otlp_traces_endpoint(host)
 
     exporter = OTLPSpanExporter(
-        endpoint=f"{host.rstrip('/')}/api/public/otel/v1/traces",
+        endpoint=trace_endpoint,
         headers={
             "Authorization": f"Basic {auth_token}",
+            "x-langfuse-ingestion-version": "4",
         },
     )
 
@@ -78,7 +91,10 @@ def init_tracing() -> None:
 
     trace.set_tracer_provider(provider)
     _initialized = True
-    logger.info("OpenTelemetry tracing initialized — exporting to Langfuse at %s", host)
+    logger.info(
+        "OpenTelemetry tracing initialized — exporting to %s (keys must match that region: EU vs US)",
+        trace_endpoint,
+    )
 
 
 def get_tracer(name: str = "driftlog") -> trace.Tracer:
