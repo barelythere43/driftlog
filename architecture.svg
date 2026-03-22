@@ -1,0 +1,108 @@
+<svg width="100%" viewBox="0 0 680 820" xmlns="http://www.w3.org/2000/svg">
+<style>
+  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .th { font-size: 14px; font-weight: 500; fill: #2C2C2A; }
+  .ts { font-size: 12px; font-weight: 400; fill: #5F5E5A; }
+  .arr { stroke: #888780; stroke-width: 1.5; }
+  .leader { stroke: #B4B2A9; stroke-width: 0.5; stroke-dasharray: 4 4; }
+
+  .gray-fill { fill: #F1EFE8; stroke: #5F5E5A; }
+  .teal-fill { fill: #E1F5EE; stroke: #0F6E56; }
+  .purple-fill { fill: #EEEDFE; stroke: #534AB7; }
+  .coral-fill { fill: #FAECE7; stroke: #993C1D; }
+
+  .gray-fill + text.th, .gray-fill ~ text.th { fill: #2C2C2A; }
+  .teal-fill + text.th, .teal-fill ~ text.th { fill: #085041; }
+  .purple-fill + text.th, .purple-fill ~ text.th { fill: #3C3489; }
+  .coral-fill + text.th, .coral-fill ~ text.th { fill: #712B13; }
+
+  .teal-title { fill: #085041; }
+  .teal-sub { fill: #0F6E56; }
+  .purple-title { fill: #3C3489; }
+  .purple-sub { fill: #534AB7; }
+  .coral-title { fill: #712B13; }
+  .coral-sub { fill: #993C1D; }
+  .gray-title { fill: #2C2C2A; }
+  .gray-sub { fill: #5F5E5A; }
+</style>
+
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<!-- Section: Ingestion -->
+<text class="th" x="330" y="22" text-anchor="middle">Ingestion pipeline</text>
+
+<rect class="gray-fill" x="60" y="40" width="200" height="44" rx="8" stroke-width="0.5"/>
+<text class="th gray-title" x="160" y="62" text-anchor="middle" dominant-baseline="central">Journal images</text>
+
+<rect class="gray-fill" x="420" y="40" width="180" height="44" rx="8" stroke-width="0.5"/>
+<text class="th gray-title" x="510" y="62" text-anchor="middle" dominant-baseline="central">Text documents</text>
+
+<line x1="160" y1="84" x2="160" y2="126" class="arr" marker-end="url(#arrow)"/>
+
+<rect class="purple-fill" x="60" y="128" width="200" height="56" rx="8" stroke-width="0.5"/>
+<text class="th purple-title" x="160" y="148" text-anchor="middle" dominant-baseline="central">Textract + Claude</text>
+<text class="ts purple-sub" x="160" y="168" text-anchor="middle" dominant-baseline="central">OCR + handwriting</text>
+
+<path d="M160,184 L160,198 L270,198 L270,214" fill="none" class="arr" marker-end="url(#arrow)"/>
+<path d="M510,84 L510,198 L390,198 L390,214" fill="none" class="arr" marker-end="url(#arrow)"/>
+
+<rect class="teal-fill" x="200" y="216" width="260" height="56" rx="8" stroke-width="0.5"/>
+<text class="th teal-title" x="330" y="236" text-anchor="middle" dominant-baseline="central">Chunk + embed</text>
+<text class="ts teal-sub" x="330" y="256" text-anchor="middle" dominant-baseline="central">800-token windows</text>
+
+<line x1="330" y1="272" x2="330" y2="304" class="arr" marker-end="url(#arrow)"/>
+
+<rect class="gray-fill" x="220" y="306" width="220" height="50" rx="8" stroke-width="0.5"/>
+<text class="th gray-title" x="330" y="331" text-anchor="middle" dominant-baseline="central">PostgreSQL + pgvector</text>
+
+<!-- Divider -->
+<line x1="60" y1="380" x2="620" y2="380" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+<!-- Section: Retrieval -->
+<text class="th" x="330" y="400" text-anchor="middle">Retrieval + generation</text>
+
+<rect class="teal-fill" x="80" y="416" width="180" height="44" rx="8" stroke-width="0.5"/>
+<text class="th teal-title" x="170" y="438" text-anchor="middle" dominant-baseline="central">Dense search</text>
+
+<rect class="teal-fill" x="380" y="416" width="180" height="44" rx="8" stroke-width="0.5"/>
+<text class="th teal-title" x="470" y="438" text-anchor="middle" dominant-baseline="central">BM25 sparse</text>
+
+<path d="M280,356 L280,394 L170,394 L170,414" fill="none" class="arr" marker-end="url(#arrow)"/>
+<path d="M380,356 L380,394 L470,394 L470,414" fill="none" class="arr" marker-end="url(#arrow)"/>
+
+<path d="M170,460 L170,478 L280,478 L280,496" fill="none" class="arr" marker-end="url(#arrow)"/>
+<path d="M470,460 L470,478 L380,478 L380,496" fill="none" class="arr" marker-end="url(#arrow)"/>
+
+<rect class="teal-fill" x="230" y="498" width="200" height="44" rx="8" stroke-width="0.5"/>
+<text class="th teal-title" x="330" y="520" text-anchor="middle" dominant-baseline="central">RRF fusion</text>
+
+<line x1="330" y1="542" x2="330" y2="572" class="arr" marker-end="url(#arrow)"/>
+
+<rect class="purple-fill" x="230" y="574" width="200" height="44" rx="8" stroke-width="0.5"/>
+<text class="th purple-title" x="330" y="596" text-anchor="middle" dominant-baseline="central">Cohere reranker</text>
+
+<line x1="330" y1="618" x2="330" y2="648" class="arr" marker-end="url(#arrow)"/>
+
+<rect class="purple-fill" x="230" y="650" width="200" height="44" rx="8" stroke-width="0.5"/>
+<text class="th purple-title" x="330" y="672" text-anchor="middle" dominant-baseline="central">Claude Haiku</text>
+
+<line x1="330" y1="694" x2="330" y2="724" class="arr" marker-end="url(#arrow)"/>
+
+<rect class="coral-fill" x="210" y="726" width="240" height="56" rx="8" stroke-width="0.5"/>
+<text class="th coral-title" x="330" y="746" text-anchor="middle" dominant-baseline="central">Answer + citations</text>
+<text class="ts coral-sub" x="330" y="766" text-anchor="middle" dominant-baseline="central">Confidence score</text>
+
+<!-- Sidebar: Observability -->
+<rect x="555" y="492" width="108" height="76" rx="8" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="4 4" fill="none" opacity="0.5"/>
+<text class="ts" x="609" y="518" text-anchor="middle">OpenTelemetry</text>
+<text class="ts" x="609" y="544" text-anchor="middle">Langfuse</text>
+<line x1="430" y1="530" x2="553" y2="530" class="leader"/>
+
+<!-- Sidebar: Eval -->
+<rect x="555" y="608" width="108" height="84" rx="8" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="4 4" fill="none" opacity="0.5"/>
+<text class="ts" x="609" y="632" text-anchor="middle">Eval harness</text>
+<text class="ts" x="609" y="654" text-anchor="middle">Ragas + DeepEval</text>
+<text class="ts" x="609" y="676" text-anchor="middle">CI gates</text>
+<line x1="430" y1="672" x2="553" y2="652" class="leader"/>
+
+</svg>

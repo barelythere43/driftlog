@@ -12,14 +12,13 @@ An AI-powered travel knowledge base. Throw in your travel documents and handwrit
 
 ---
 
-## How it works (the short version)
+## How it works
 
-```
-Your content → chunked → embedded → stored in PostgreSQL (with vectors)
+![DriftLog architecture](architecture.svg)
 
-Your question → dense search (semantic) + sparse search (keywords)
-             → fused together → reranked → Claude generates an answer
-```
+**Ingestion pipeline** — content (images or text) is OCR'd if needed, split into 800-token chunks, embedded, and stored in PostgreSQL with pgvector.
+
+**Retrieval + generation** — your question runs through dense (semantic) and sparse (BM25 keyword) search in parallel, the results are fused via RRF and reranked by Cohere, then Claude Haiku generates an answer with citations.
 
 ---
 
